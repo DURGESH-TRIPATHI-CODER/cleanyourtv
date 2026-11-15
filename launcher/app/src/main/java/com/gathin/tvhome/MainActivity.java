@@ -4,6 +4,7 @@ import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -462,6 +463,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        YouTubeRoutine.schedule(this, cfg);
         homeAppKeys = RemoteKeys.parseAppKeys(cfg.appKeys);
         clockFormat = cfg.clockFormat;
         ClockFormat.apply(getWindow().getDecorView(), clockFormat);
@@ -3147,13 +3149,48 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
-    /**
-     * The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. With
-     * vpn_pill the VPN app has its own pill, so this one always opens Wi-Fi settings.
-     */
+    /** Shows the connected network and a separate action for opening Wi-Fi settings. */
     private void openNetworkPill() {
-        Intent i = vpnPill ? null : vpnAppIntent();
-        open(i != null ? i : systemIntent(Settings.ACTION_WIFI_SETTINGS));
+        View anchor = findViewById(R.id.btnWifi);
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (250 * density));
+
+        View network = addInputRow(rows, popup, R.drawable.ic_wifi, getString(R.string.wifi), -1, () -> {});
+        TextView networkStatus = network.findViewById(R.id.status);
+        String ssid = connectedWifiName();
+        networkStatus.setText(TextUtils.isEmpty(ssid) ? getString(R.string.offline) : ssid);
+        networkStatus.setVisibility(View.VISIBLE);
+
+        addInputRow(rows, popup, R.drawable.ic_settings, getString(R.string.open_wifi_settings), -1,
+                () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
+
+        View bluetooth = addInputRow(rows, popup, R.drawable.ic_bluetooth, getString(R.string.bluetooth), -1, () -> {});
+        TextView bluetoothStatus = bluetooth.findViewById(R.id.status);
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothStatus.setText(adapter != null && adapter.isEnabled()
+                ? getString(R.string.on) : getString(R.string.off));
+        bluetoothStatus.setVisibility(View.VISIBLE);
+
+        addInputRow(rows, popup, R.drawable.ic_settings, getString(R.string.open_bluetooth_settings), -1,
+                () -> open(systemIntent(Settings.ACTION_BLUETOOTH_SETTINGS)));
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max((int) (250 * density), Math.min(panel.getMeasuredWidth(), (int) (360 * density))));
+        dropIn(popup, panel, anchor, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.START : Gravity.END);
+    }
+
+    @SuppressWarnings("deprecation")
+    private String connectedWifiName() {
+        try {
+            WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            WifiInfo info = wm != null ? wm.getConnectionInfo() : null;
+            String ssid = info != null ? info.getSSID() : null;
+            if (ssid == null) return "";
+            ssid = ssid.replace("\"", "").trim();
+            return ssid.isEmpty() || ssid.contains("unknown") || ssid.equals("0x") ? "" : ssid;
+        } catch (RuntimeException ignored) {
+            return "";
+        }
     }
 
     /** vpn_app's launch intent, or null when none is set or it is not installed. */
@@ -3391,6 +3428,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 startActivity(new Intent(view).setPackage(liveTvPkg));
                 return;
             } catch (ActivityNotFoundException | SecurityException ignored) {
+            }
+            // Some MediaTek TV-center builds handle the input under /channel rather than /passthrough.
+            // Keep this package-scoped so those builds do not change the standard route for other TVs.
+            if (inputUriScheme.isEmpty()) {
+                Uri channelUri = Uri.parse("content://android.media.tv/channel/" + Uri.encode(inputId));
+                Intent channelView = new Intent(Intent.ACTION_VIEW)
+                        .setDataAndType(channelUri, "vnd.android.cursor.item/channel")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    startActivity(channelView.setPackage(liveTvPkg));
+                    return;
+                } catch (ActivityNotFoundException | SecurityException ignored) {
+                }
             }
         }
         try {

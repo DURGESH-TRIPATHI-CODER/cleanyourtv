@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#050507" />
+  <title>Photo — Living Room</title>
+  <style>
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#050507;color:white;overflow:hidden;font-family:system-ui,sans-serif}.screen{position:absolute;inset:0;display:grid;place-items:center}.photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.drawing{object-fit:fill;pointer-events:none}.hint{position:absolute;top:24px;left:28px;color:#fff9;font-size:15px;opacity:0;transition:opacity .5s}.bad{font-size:20px;text-align:center;padding:30px;color:#ddd}.screen.show-hint .hint{opacity:1}
+  </style>
+</head>
+<body>
+  <main class="screen" id="screen"><div class="bad" id="message">Loading photo…</div></main>
+  <script>
+    (async () => {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!/^[a-f0-9]{32}$/.test(id || '')) { document.querySelector('#message').textContent = 'This photo link is invalid.'; return; }
+      try {
+        const response = await fetch(`/api/screen/${id}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Photo not found');
+        const photo = await response.json();
+        const screen = document.querySelector('#screen');
+        screen.replaceChildren();
+        const image = document.createElement('img');
+        image.className = 'photo';
+        image.alt = photo.name || 'Shared photo';
+        image.src = `/shared/${encodeURIComponent(photo.image)}`;
+        screen.append(image);
+        if (photo.drawing) {
+          const overlay = document.createElement('img');
+          overlay.className = 'photo drawing';
+          overlay.alt = '';
+          overlay.src = `/shared/${encodeURIComponent(photo.drawing)}`;
+          screen.append(overlay);
+        }
+        const hint = document.createElement('div');
+        hint.className = 'hint';
+        hint.textContent = 'Press BACK on your TV remote to exit';
+        screen.append(hint);
+        setTimeout(() => screen.classList.add('show-hint'), 4000);
+        setTimeout(() => screen.classList.remove('show-hint'), 8500);
+      } catch (error) {
+        document.querySelector('#message').textContent = `${error.message}. Keep the remote bridge running on your computer.`;
+      }
+    })();
+  </script>
+</body>
+</html>

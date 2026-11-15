@@ -20,4 +20,6 @@
   "ambient_glow": true,
   "background_color": "#05070C",
   "sky_intensity": 40
+  ,"youtube_routine_enabled": true
+  ,"youtube_routine_url": "https://www.youtube.com/watch?v=nVx-6ICOEf0&list=RDnVx-6ICOEf0&start_radio=1&pp=mAkA"
 }

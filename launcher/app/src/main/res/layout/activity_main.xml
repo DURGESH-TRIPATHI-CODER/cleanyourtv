@@ -405,6 +405,20 @@
         </FrameLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/latestLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="18dp"
+        android:text="@string/latest"
+        android:textColor="#99FFFFFF"
+        android:textSize="12sp"
+        android:fontFamily="@string/font_medium"
+        android:letterSpacing="0.16"
+        android:textAllCaps="true"
+        android:importantForAccessibility="no" />
+
     <!-- The single floating glass highlight that springs between tiles. -->
     <com.gathin.tvhome.GlassView
         android:id="@+id/glass"

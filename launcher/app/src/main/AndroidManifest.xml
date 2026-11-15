@@ -239,6 +239,9 @@
                 <action android:name="com.gathin.tvhome.GUARD" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".YouTubeRoutine$Receiver"
+            android:exported="false" />
 
         <service
             android:name=".InputKeyService"

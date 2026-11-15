@@ -1,5 +1,14 @@
 tools/venv
 tools/adbkey/
+tools/adb-profile/
+tools/platform-tools/
+tools/platform-tools-windows.zip
+tools/android-sdk/
+tools/temurin17/
+tools/commandlinetools-win.zip
+tools/commandlinetools-win-13114758.zip
+tools/temurin17-jdk.zip
+tv-remote/shared/
 __pycache__/
 launcher/.gradle/
 launcher/build/
@@ -21,3 +30,5 @@ bench-results/
 *.aab
 launcher/hs_err_pid*.log
 launcher/replay_pid*.log
+
+tools/temurin17-stage/
